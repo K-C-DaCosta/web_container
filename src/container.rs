@@ -1,18 +1,20 @@
+use std::{
+    io::{Read, Seek, Write},
+    mem,
+};
+pub mod header; 
+use header::*;
 
-#[repr(C)]
-pub struct HeaderEntry{
-    filename:[u8;128],
-    /// number of bytes in the file
-    file_size:u64,
-    /// start of the file, relative to the start of the container
-    offset:u64,
+
+pub struct Container<R> {
+    header: Option<ContainerHeader>,
+    data: R,
 }
-
-pub struct ContainerHeader{
-
-}
-
-pub struct Container{
- 
-    
+impl<R> Container<R>
+where
+    R: Read,
+{
+    pub fn load(mut res: R) -> Self {
+        unimplemented!("asdasd")
+    }
 }
