@@ -1,4 +1,4 @@
 /target
-/resources
+/resources/*
 !/resources/.stub
 Cargo.lock
