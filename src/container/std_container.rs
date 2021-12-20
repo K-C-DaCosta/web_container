@@ -1,14 +1,6 @@
-use std::{
-    io::{self, Read, Write},
-    mem,
-};
+use super::*; 
 
-pub mod header;
-pub use header::*;
-
-use super::*;
-
-impl WebContainer {
+impl WebContainer{
     /// # Description
     /// packs files and writes into `output`
     /// ## Example
@@ -70,5 +62,34 @@ impl WebContainer {
                 .map_err(|_| ErrorKind::PackFailed("file copy failed"))?;
         }
         Ok(())
+    }
+
+    pub async fn open<P>(&mut self, path: P) -> ContainerError<()>
+    where
+        P: AsRef<Path>,
+    {
+        let file_handler =
+            fs::File::open(path).map_err(|e| ErrorKind::GenericError(Box::new(e)))?;
+
+        let header =
+            Header::load(&file_handler).ok_or(ErrorKind::GenericTextError("header load failed"))?;
+
+        println!("header:\n{:?}", header);
+        self.header = Some(header);
+
+        Ok(())
+    }
+
+    pub async fn read_file<P, Memory>(&mut self, path: P, mut out: Memory)
+    where
+        P: AsRef<Path>,
+        Memory: Write,
+    {
+
+        
+
+
+
+
     }
 }
