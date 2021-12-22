@@ -81,6 +81,10 @@ impl HeaderEntry {
         str::from_utf8(self.file_path())
             .ok()
             .and_then(|s| s.find('\0').map(|n| &s[0..n]).or(Some(s)))
+            .map(|s| {
+                println!("{:?}", s);
+                s
+            })
     }
     pub fn file_size(&self) -> u64 {
         self.file_size
@@ -96,9 +100,14 @@ impl Default for HeaderEntry {
         }
     }
 }
+
 impl fmt::Debug for HeaderEntry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let filename = str::from_utf8(&self.file_path).unwrap();
+        let filename = str::from_utf8(&self.file_path)
+            .ok()
+            .and_then(|s| s.find('\0').map(|n| &s[0..n]).or(Some(s)))
+            .unwrap();
+
         let file_size = self.file_size;
         let offset = self.offset;
 

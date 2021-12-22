@@ -1,10 +1,22 @@
 use std::{
-    io::{self, Read, Write},
+    io::{self, BufWriter, Read, Write},
     mem,
 };
 
 pub mod header;
 pub use header::*;
+
+/// web-sys implementation of the container
+#[cfg(all(target_family = "wasm", not(target_os = "wasi")))]
+mod browser_impl;
+#[cfg(all(target_family = "wasm", not(target_os = "wasi")))]
+pub use browser_impl::*;
+
+/// implementation of container if STD is implemented
+#[cfg(not(all(target_family = "wasm", not(target_os = "wasi"))))]
+mod desktop_impl;
+#[cfg(not(all(target_family = "wasm", not(target_os = "wasi"))))]
+pub use desktop_impl::*;
 
 use super::*;
 
@@ -32,10 +44,12 @@ impl WebContainer {
     /// .unwrap();
     /// ```
     pub fn pack_to<'a, Memory: Write + Read>(
-        mut output: Memory,
+        output: Memory,
         files: &mut [PackableFile],
     ) -> ContainerError<()> {
+
         let mut header = Header::default();
+        let mut output = BufWriter::new(output);
 
         const BYTES_OF_NUM_ENTRIES_AND_HEADER_SIZE_AND_TOTAL_SIZE_MEMBERS: usize = 24;
         let header_size = (files.len() * HEADER_ENTRY_IN_BYTES
