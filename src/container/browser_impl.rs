@@ -1,6 +1,6 @@
 use super::*;
 
-use js_sys::{ArrayBuffer, Object, Uint8Array};
+use js_sys::{ArrayBuffer, Uint8Array};
 use wasm_bindgen::{prelude::*, JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Blob, Request, RequestInit, RequestMode, Response};
@@ -40,10 +40,10 @@ impl WebContainer {
 
         metadata_slice.read_exact(&mut buffer).unwrap();
         let _num_entries = u64::from_le_bytes(buffer);
-        
+
         metadata_slice.read_exact(&mut buffer).unwrap();
         let header_size = u64::from_le_bytes(buffer);
-        
+
         metadata_slice.read_exact(&mut buffer).unwrap();
         let _total_size = u64::from_le_bytes(buffer);
 
@@ -52,7 +52,6 @@ impl WebContainer {
         //     num_entries, header_size, total_size
         // ));
 
-        
         let mut full_header = Cursor::new(Self::fetch_bytes(&path, 0, header_size as i64).await?);
         let header = Header::load(&mut full_header).unwrap();
         self.header = Some(header);
@@ -111,15 +110,15 @@ impl WebContainer {
 
         let response = JsFuture::from(window.fetch_with_request(&req))
             .await
-            .map_err(ErrorKind::text_error)?
+            .map_err(|_| ErrorKind::GenericTextError("fetch failed"))?
             .dyn_into::<Response>()
-            .unwrap();
+            .map_err(|_| ErrorKind::GenericTextError("response failed to cast"))?;
 
         let blob = JsFuture::from(response.blob().unwrap())
             .await
-            .unwrap()
+            .map_err(|_| ErrorKind::GenericTextError("blob failed to resolve"))?
             .dyn_into::<Blob>()
-            .unwrap();
+            .map_err(|_| ErrorKind::GenericTextError("blob failed to cast"))?;
 
         let array_buffer = JsFuture::from(blob.array_buffer())
             .await
