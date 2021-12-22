@@ -25,9 +25,7 @@ pub struct WebContainer {
 
 impl WebContainer {
     pub fn new() -> Self {
-        Self {
-            header: None,
-        }
+        Self { header: None }
     }
     pub async fn open<P>(&mut self, path: P) -> ContainerError<()>
     where
@@ -35,28 +33,31 @@ impl WebContainer {
     {
         let mut buffer = [0u8; 8];
 
-        let header_data = Self::fetch_bytes(&path, 0, 24).await?;
+        // the first 24 bytes contain crucial info about size of the pile
+        let header_metadata = Self::fetch_bytes(&path, 0, 24).await?;
 
-        let mut header_slice = header_data.as_slice();
+        let mut metadata_slice = header_metadata.as_slice();
 
-        header_slice.read_exact(&mut buffer).unwrap();
-        let num_entries = u64::from_le_bytes(buffer);
-
-        header_slice.read_exact(&mut buffer).unwrap();
+        metadata_slice.read_exact(&mut buffer).unwrap();
+        let _num_entries = u64::from_le_bytes(buffer);
+        
+        metadata_slice.read_exact(&mut buffer).unwrap();
         let header_size = u64::from_le_bytes(buffer);
+        
+        metadata_slice.read_exact(&mut buffer).unwrap();
+        let _total_size = u64::from_le_bytes(buffer);
 
-        header_slice.read_exact(&mut buffer).unwrap();
-        let total_size = u64::from_le_bytes(buffer);
+        // log(&format!(
+        //     "num entries {}, header_size {} , total_size {}",
+        //     num_entries, header_size, total_size
+        // ));
 
-        log(&format!(
-            "num entries {}, header_size {} , total_size {}",
-            num_entries, header_size, total_size
-        ));
+        
+        let mut full_header = Cursor::new(Self::fetch_bytes(&path, 0, header_size as i64).await?);
+        let header = Header::load(&mut full_header).unwrap();
+        self.header = Some(header);
 
-        let mut header_data = Cursor::new(Self::fetch_bytes(&path, 0, header_size as i64).await?);
-        let header = Header::load(&mut header_data).unwrap();
-
-        log(&format!("header\n {:?}", header));
+        // log(&format!("header\n {:?}", header));
 
         Ok(())
     }
